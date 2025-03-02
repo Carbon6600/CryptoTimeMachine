@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Крипто Машина Часу</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            text-align: center;
+            padding: 20px;
+            color: #333;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        input, select, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        .time-travel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+        .time-travel.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .chart-container {
+            margin-top: 20px;
+            position: relative;
+            height: 300px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Крипто Машина Часу</h1>
+        <p>Поточний курс криптовалют: <span id="currentRates">Завантаження...</span></p>
+        <label for="deposit">Сума депозиту ($):</label>
+        <input type="number" id="deposit" value="100">
+        <label for="year">Виберіть рік для подорожі:</label>
+        <select id="year"></select>
+        <label for="crypto">Виберіть криптовалюту:</label>
+        <select id="crypto">
+            <option value="bitcoin">Bitcoin (BTC)</option>
+            <option value="ethereum">Ethereum (ETH)</option>
+            <option value="litecoin">Litecoin (LTC)</option>
+            <option value="ripple">Ripple (XRP)</option>
+        </select>
+        <button onclick="startTimeTravel()">Подорож у часі</button>
+        <div class="result" id="result"></div>
+        <div class="time-travel" id="timeTravel">
+            <div>Подорож у часі...</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="cryptoChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let cryptoChart; // Глобальна змінна для графіка
+
+        // Історичні дані (приклад)
+        const historicalPrices = {
+            bitcoin: { "2015": 310, "2016": 430, "2017": 970, "2018": 14000, "2019": 3800, "2020": 7200, "2021": 29000, "2022": 47000, "2023": 16800, "2024": 45000 },
+            ethereum: { "2015": 1, "2016": 10, "2017": 300, "2018": 1400, "2019": 150, "2020": 200, "2021": 2000, "2022": 3500, "2023": 1200, "2024": 2500 },
+            litecoin: { "2015": 3, "2016": 4, "2017": 50, "2018": 250, "2019": 40, "2020": 60, "2021": 200, "2022": 150, "2023": 80, "2024": 100 },
+            ripple: { "2015": 0.01, "2016": 0.006, "2017": 0.25, "2018": 2.5, "2019": 0.3, "2020": 0.2, "2021": 1.5, "2022": 0.8, "2023": 0.5, "2024": 0.7 }
+        };
+
+        async function getCurrentPrice(cryptoId) {
+            try {
+                const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptoId}&vs_currencies=usd`);
+                const data = await response.json();
+                return data[cryptoId].usd;
+            } catch (error) {
+                console.error("Помилка отримання курсу криптовалюти:", error);
+                return null;
+            }
+        }
+
+        async function init() {
+            const years = Object.keys(historicalPrices.bitcoin);
+            let yearSelect = document.getElementById("year");
+            years.forEach(year => {
+                let option = document.createElement("option");
+                option.value = year;
+                option.innerText = year;
+                yearSelect.appendChild(option);
+            });
+        }
+
+        async function startTimeTravel() {
+            const timeTravel = document.getElementById("timeTravel");
+            const result = document.getElementById("result");
+
+            // Початок анімації подорожі
+            timeTravel.classList.add("active");
+
+            // Затримка для імітації "подорожі в часі"
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            // Приховання анімації подорожі
+            timeTravel.classList.remove("active");
+
+            // Отримання даних
+            const deposit = parseFloat(document.getElementById("deposit").value);
+            const selectedYear = document.getElementById("year").value;
+            const selectedCrypto = document.getElementById("crypto").value;
+            const currentPrice = await getCurrentPrice(selectedCrypto);
+
+            if (!currentPrice) {
+                result.innerText = "Не вдалося отримати поточний курс";
+                return;
+            }
+
+            const historicalPrice = historicalPrices[selectedCrypto][selectedYear];
+            if (!historicalPrice) {
+                result.innerText = "Дані для вибраного року відсутні";
+                return;
+            }
+
+            // Розрахунок
+            const cryptoBought = deposit / historicalPrice;
+            const futureValue = cryptoBought * currentPrice;
+
+            // Вивід результату
+            result.innerHTML = `
+                У ${selectedYear} році ви б купили <strong>${cryptoBought.toFixed(6)} ${selectedCrypto.toUpperCase()}</strong> за курсом <strong>${historicalPrice} $</strong>.<br>
+                Сьогодні ці <strong>${cryptoBought.toFixed(6)} ${selectedCrypto.toUpperCase()}</strong> коштують <strong>${futureValue.toFixed(2)} $</strong>.
+            `;
+            result.style.opacity = 1;
+
+            // Побудова графіка
+            const labels = Object.keys(historicalPrices[selectedCrypto]);
+            const data = labels.map(year => {
+                if (year < selectedYear) return null;
+                return (cryptoBought * historicalPrices[selectedCrypto][year]).toFixed(2);
+            });
+
+            renderChart(labels, data, selectedYear);
+        }
+
+        function renderChart(labels, data, selectedYear) {
+            const ctx = document.getElementById('cryptoChart').getContext('2d');
+            if (cryptoChart) {
+                cryptoChart.destroy(); // Видаляємо старий графік
+            }
+            cryptoChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Вартість інвестицій ($)',
+                        data: data,
+                        borderColor: '#007bff',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuad'
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: selectedYear,
+                                    xMax: selectedYear,
+                                    borderColor: '#ff0000',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Початок інвестицій',
+                                        enabled: true,
+                                        position: 'end'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
